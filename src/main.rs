@@ -3,19 +3,31 @@
 #[macro_use] extern crate derivative;
 #[macro_use] extern crate serde;
 
-use std::{fs::File, io::BufReader};
+use std::{fs::File, io::{BufReader, Write}, os::unix::prelude::FileExt};
 
 use cursive::{Rect, event::Key, traits::*, views::{FixedLayout, ScrollView}};
 use cursive::views::{EditView, TextView};
 use cursive::Cursive;
 
+mod request;
+use request::RequestTemplate;
 mod response;
 use response::Response;
 
 fn main() -> anyhow::Result<()> {
-	let file_reader = BufReader::new(File::open("test_response.json")?);
+	/* let file_reader = BufReader::new(File::open("test_response.json")?);
 	let unwrapped_json: Response = serde_json::from_reader(file_reader)?;
-	println!("{:#?}", unwrapped_json);
+	println!("{:#?}", unwrapped_json); */
+
+	let request_template = RequestTemplate::new("data/request_template.json", "data/multi_match_template.json", "data/wildcard_template.json")?;
+
+	let request = request_template.template("i3");
+	
+	let mut request_output = File::create("test_output.json")?;
+	request_output.write_all(&serde_json::to_vec(&request)?)?;
+	/* let request_reader = BufReader::new(File::open("data/template_request.json")?);
+	let request_json: Request = serde_json::from_reader(request_reader)?;
+	println!("{:#?}", request_json); */
 
 	/* render(); */
 	Ok(())
