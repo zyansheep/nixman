@@ -3,7 +3,7 @@
 #[macro_use] extern crate derivative;
 #[macro_use] extern crate serde;
 
-use std::{fs::File, io::{BufReader, Write}, os::unix::prelude::FileExt};
+use std::{fs::File, io::Write};
 
 use cursive::{Rect, event::Key, traits::*, views::{FixedLayout, ScrollView}};
 use cursive::views::{EditView, TextView};
@@ -15,10 +15,8 @@ mod response;
 use response::Response;
 
 fn main() -> anyhow::Result<()> {
-	/* let file_reader = BufReader::new(File::open("test_response.json")?);
-	let unwrapped_json: Response = serde_json::from_reader(file_reader)?;
-	println!("{:#?}", unwrapped_json); */
-
+	let request_url = get_request_url()?;
+	println!("Connecting to: {}", request_url);
 	let request_template = RequestTemplate::new("data/request_template.json", "data/multi_match_template.json", "data/wildcard_template.json")?;
 
 	let request = request_template.template("i3");
@@ -31,6 +29,20 @@ fn main() -> anyhow::Result<()> {
 
 	/* render(); */
 	Ok(())
+}
+
+fn get_request_url() -> anyhow::Result<String> {
+	// Find Javascript file
+	let site_text = reqwest::blocking::get("https://search.nixos.org/")?.text()?;
+	let page_regex = regex::Regex::new(r#"src="(/main-.*\.js)""#)?;
+	let capture = page_regex.captures_iter(&site_text).next().unwrap();
+
+	// Find url from javascript file
+	let javascript_text = reqwest::blocking::get(format!("https://search.nixos.org{}", &capture[1]))?.text()?;
+
+	let script_regex = regex::Regex::new(r#"https://nixos-search.*\.bonsaisearch.net:443"#).unwrap();
+	let capture = script_regex.captures_iter(&javascript_text).next().unwrap();
+	Ok( capture[0].to_owned() )
 }
 
 fn render() {

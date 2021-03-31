@@ -8,6 +8,7 @@ pkgs.mkShell {
 		cargo-edit
 		pkg-config
 		ncurses
+		openssl
 	];
 	/* shellHook = ''
     	export PGDATA=./db/content
