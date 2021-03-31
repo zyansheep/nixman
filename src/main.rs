@@ -1,8 +1,27 @@
+#![allow(dead_code)]
+
+#[macro_use] extern crate derivative;
+#[macro_use] extern crate serde;
+
+use std::{fs::File, io::BufReader};
+
 use cursive::{Rect, event::Key, traits::*, views::{FixedLayout, ScrollView}};
-use cursive::views::{Dialog, EditView, TextView};
+use cursive::views::{EditView, TextView};
 use cursive::Cursive;
 
-fn main() {
+mod response;
+use response::Response;
+
+fn main() -> anyhow::Result<()> {
+	let file_reader = BufReader::new(File::open("test_response.json")?);
+	let unwrapped_json: Response = serde_json::from_reader(file_reader)?;
+	println!("{:#?}", unwrapped_json);
+
+	/* render(); */
+	Ok(())
+}
+
+fn render() {
 	let mut siv = cursive::default();
 	siv.add_global_callback(Key::Esc, |s| s.quit());
 
@@ -28,7 +47,7 @@ fn main() {
 // If the name is empty, we'll show an error message instead.
 fn search_input(s: &mut Cursive, input: &str) {
 	let mut results = s.find_name::<ScrollView<TextView>>("search-results").unwrap();
-	let mut result_text = results.get_inner_mut();
+	let result_text = results.get_inner_mut();
 	if !input.is_empty() {
 		// Try again as many times as we need!
 		let content = format!("You Searched: {}", input);
