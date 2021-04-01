@@ -13,7 +13,6 @@
 		# naersk-lib = naersk.lib."${system}";
 		# Use Nightly (provided by fenix)
 		naersk-lib = naersk.lib."${system}".override {
-			# Use Fenix to get nightly rust
 			inherit (fenix.packages.${system}.minimal) cargo rustc;
 		};
 	in rec {
