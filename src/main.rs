@@ -3,8 +3,6 @@
 #[macro_use] extern crate derivative;
 #[macro_use] extern crate serde;
 
-use std::{fs::File, io::Write};
-
 use cursive::{Rect, event::Key, traits::*, views::{FixedLayout, ScrollView}};
 use cursive::views::{EditView, TextView};
 use cursive::Cursive;
@@ -15,14 +13,27 @@ mod response;
 use response::Response;
 
 fn main() -> anyhow::Result<()> {
-	let request_url = get_request_url()?;
+	let js_file = get_js_file()?;
+	let request_url = get_request_url(&js_file)?;
+	let auth = get_auth(&js_file)?;
 	println!("Connecting to: {}", request_url);
-	let request_template = RequestTemplate::new("data/request_template.json", "data/multi_match_template.json", "data/wildcard_template.json")?;
+	println!("Auth Key: {}", auth);
+	/* let request_template = RequestTemplate::new("data/request_template.json", "data/multi_match_template.json", "data/wildcard_template.json")?;
 
 	let request = request_template.template("i3");
+	println!("Sending Request: {:#?}", request);
+
+	let client = reqwest::blocking::Client::new();
+	let response = client.post(request_url).body(serde_json::to_string(&request)?).send()?;
+
+	let response_bytes = response.bytes()?.to_vec();
+	println!("{}", String::from_utf8(response_bytes.clone())?);
+	let response: Response = serde_json::from_slice(&response_bytes)?;
+	println!("{:#?}", response); */
+
 	
-	let mut request_output = File::create("test_output.json")?;
-	request_output.write_all(&serde_json::to_vec(&request)?)?;
+	/* let mut request_output = File::create("test_output.json")?;
+	request_output.write_all(&)?; */
 	/* let request_reader = BufReader::new(File::open("data/template_request.json")?);
 	let request_json: Request = serde_json::from_reader(request_reader)?;
 	println!("{:#?}", request_json); */
@@ -31,18 +42,31 @@ fn main() -> anyhow::Result<()> {
 	Ok(())
 }
 
-fn get_request_url() -> anyhow::Result<String> {
+fn get_js_file() -> anyhow::Result<String> {
 	// Find Javascript file
 	let site_text = reqwest::blocking::get("https://search.nixos.org/")?.text()?;
 	let page_regex = regex::Regex::new(r#"src="(/main-.*\.js)""#)?;
 	let capture = page_regex.captures_iter(&site_text).next().unwrap();
 
 	// Find url from javascript file
-	let javascript_text = reqwest::blocking::get(format!("https://search.nixos.org{}", &capture[1]))?.text()?;
-
+	let js_text = reqwest::blocking::get(format!("https://search.nixos.org{}", &capture[1]))?.text()?;
+	Ok(js_text)
+}
+fn get_request_url(js_text: &str) -> anyhow::Result<String> {
 	let script_regex = regex::Regex::new(r#"https://nixos-search.*\.bonsaisearch.net:443"#).unwrap();
-	let capture = script_regex.captures_iter(&javascript_text).next().unwrap();
+	let capture = script_regex.captures_iter(&js_text).next().unwrap();
 	Ok( capture[0].to_owned() )
+}
+fn get_auth(js_text: &str) -> anyhow::Result<String> {
+	let script_regex = regex::Regex::new(r#"ELASTICSEARCH_USERNAME\|\|"(.*?)""#).unwrap();
+	let capture = script_regex.captures_iter(&js_text).next().unwrap();
+	let username = &capture[1];
+
+	let script_regex = regex::Regex::new(r#"ELASTICSEARCH_PASSWORD\|\|"(.*?)""#).unwrap();
+	let capture = script_regex.captures_iter(&js_text).next().unwrap();
+	let password = &capture[1];
+	let auth_key = base64::encode(format!("{}:{}", username, password));
+	Ok(auth_key)
 }
 
 fn render() {
