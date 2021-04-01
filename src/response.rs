@@ -35,5 +35,5 @@ pub struct Response {
 	timed_out: bool,
 	_shards: IgnoredAny,
 	hits: Hits,
-	aggregations: IgnoredAny,
+	//aggregations: IgnoredAny,
 }

@@ -7,7 +7,6 @@
 use cursive::{Rect, event::Key, traits::*, views::{FixedLayout, ScrollView}};
 use cursive::views::{EditView, TextView};
 use cursive::Cursive;
-
 use regex::Regex;
 
 mod request;
@@ -25,16 +24,17 @@ fn main() -> anyhow::Result<()> {
 	let request_template = RequestTemplate::new("data/request_template.json", "data/multi_match_template.json", "data/wildcard_template.json")?;
 
 	let request = request_template.template("i3");
-	println!("Sending Request: {:#?}", request);
+	//println!("Sending Request: {:#?}", request);
 
 	let client = reqwest::blocking::Client::new();
-	let response = client.post(request_url)
+	let response = client.post(request_url + "/_search")
 		.body(serde_json::to_string(&request)?)
-    	.basic_auth(user, Some(pass))
+    	.header(reqwest::header::CONTENT_TYPE, "application/json")
+		.basic_auth(user, Some(pass))
 		.send()?;
 
 	let response_bytes = response.bytes()?.to_vec();
-	println!("{}", String::from_utf8(response_bytes.clone())?);
+	//println!("{}", String::from_utf8(response_bytes.clone())?);
 	let response: Response = serde_json::from_slice(&response_bytes)?;
 	println!("{:#?}", response);
 
