@@ -2,10 +2,13 @@
 
 #[macro_use] extern crate derivative;
 #[macro_use] extern crate serde;
+#[macro_use] extern crate lazy_static;
 
 use cursive::{Rect, event::Key, traits::*, views::{FixedLayout, ScrollView}};
 use cursive::views::{EditView, TextView};
 use cursive::Cursive;
+
+use regex::Regex;
 
 mod request;
 use request::RequestTemplate;
@@ -15,21 +18,25 @@ use response::Response;
 fn main() -> anyhow::Result<()> {
 	let js_file = get_js_file()?;
 	let request_url = get_request_url(&js_file)?;
-	let auth = get_auth(&js_file)?;
+	let (user, pass) = get_auth(&js_file)?;
 	println!("Connecting to: {}", request_url);
-	println!("Auth Key: {}", auth);
-	/* let request_template = RequestTemplate::new("data/request_template.json", "data/multi_match_template.json", "data/wildcard_template.json")?;
+	println!("Auth User: {}, Pass: {}", user, pass);
+
+	let request_template = RequestTemplate::new("data/request_template.json", "data/multi_match_template.json", "data/wildcard_template.json")?;
 
 	let request = request_template.template("i3");
 	println!("Sending Request: {:#?}", request);
 
 	let client = reqwest::blocking::Client::new();
-	let response = client.post(request_url).body(serde_json::to_string(&request)?).send()?;
+	let response = client.post(request_url)
+		.body(serde_json::to_string(&request)?)
+    	.basic_auth(user, Some(pass))
+		.send()?;
 
 	let response_bytes = response.bytes()?.to_vec();
 	println!("{}", String::from_utf8(response_bytes.clone())?);
 	let response: Response = serde_json::from_slice(&response_bytes)?;
-	println!("{:#?}", response); */
+	println!("{:#?}", response);
 
 	
 	/* let mut request_output = File::create("test_output.json")?;
@@ -57,16 +64,18 @@ fn get_request_url(js_text: &str) -> anyhow::Result<String> {
 	let capture = script_regex.captures_iter(&js_text).next().unwrap();
 	Ok( capture[0].to_owned() )
 }
-fn get_auth(js_text: &str) -> anyhow::Result<String> {
-	let script_regex = regex::Regex::new(r#"ELASTICSEARCH_USERNAME\|\|"(.*?)""#).unwrap();
-	let capture = script_regex.captures_iter(&js_text).next().unwrap();
-	let username = &capture[1];
-
-	let script_regex = regex::Regex::new(r#"ELASTICSEARCH_PASSWORD\|\|"(.*?)""#).unwrap();
-	let capture = script_regex.captures_iter(&js_text).next().unwrap();
-	let password = &capture[1];
-	let auth_key = base64::encode(format!("{}:{}", username, password));
-	Ok(auth_key)
+fn get_auth<'a>(js_text: &'a str) -> anyhow::Result<(&'a str, &'a str)> {
+	lazy_static! {
+		static ref USERNAME_REGEX: Regex = Regex::new(r#"ELASTICSEARCH_USERNAME\|\|"(.*?)""#).unwrap();
+	}
+	let username = USERNAME_REGEX.captures_iter(&js_text).next().unwrap().get(1).unwrap().as_str();
+	
+	lazy_static! {
+		static ref PASSWORD_REGEX: Regex = Regex::new(r#"ELASTICSEARCH_PASSWORD\|\|"(.*?)""#).unwrap();
+	}
+	let password = PASSWORD_REGEX.captures_iter(js_text).next().unwrap().get(1).unwrap().as_str();
+	
+	Ok((username, password))
 }
 
 fn render() {
