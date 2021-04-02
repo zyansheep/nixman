@@ -17,7 +17,8 @@ pub struct MultiMatchQuery {
 impl MultiMatchQuery {
 	pub fn template<'a>(&self, search_input: &'a str) -> impl Iterator<Item = Self> + 'a {
 		let mut template = self.clone();
-		template._name = format!("multi_match_{}", search_input);
+		let search_input_underscored = search_input.replace(" ", "_").to_lowercase();
+		template._name = format!("multi_match_{}", search_input_underscored);
 		template.query = search_input.to_owned();
 		Some(template).into_iter()
 	}
@@ -36,7 +37,7 @@ impl WildcardQuery {
 		let template = self.clone();
 		search_input.split_whitespace().map(move |input_word|{
 			let mut query = template.clone();
-			query.package_attr_name.value = input_word.to_lowercase();
+			query.package_attr_name.value = format!("*{}*", input_word.to_lowercase());
 			query
 		})
 	}

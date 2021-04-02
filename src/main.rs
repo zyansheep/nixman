@@ -8,6 +8,7 @@ use cursive::{Rect, event::Key, traits::*, views::{FixedLayout, ScrollView}};
 use cursive::views::{EditView, TextView};
 use cursive::Cursive;
 use regex::Regex;
+use reqwest::header::HeaderMap;
 
 mod request;
 use request::RequestTemplate;
@@ -15,37 +16,8 @@ mod response;
 use response::Response;
 
 fn main() -> anyhow::Result<()> {
-	let js_file = get_js_file()?;
-	let request_url = get_request_url(&js_file)?;
-	let (user, pass) = get_auth(&js_file)?;
-	println!("Connecting to: {}", request_url);
-	println!("Auth User: {}, Pass: {}", user, pass);
-
-	let request_template = RequestTemplate::new("data/request_template.json", "data/multi_match_template.json", "data/wildcard_template.json")?;
-
-	let request = request_template.template("i3");
-	//println!("Sending Request: {:#?}", request);
-
-	let client = reqwest::blocking::Client::new();
-	let response = client.post(request_url + "/_search")
-		.body(serde_json::to_string(&request)?)
-    	.header(reqwest::header::CONTENT_TYPE, "application/json")
-		.basic_auth(user, Some(pass))
-		.send()?;
-
-	let response_bytes = response.bytes()?.to_vec();
-	//println!("{}", String::from_utf8(response_bytes.clone())?);
-	let response: Response = serde_json::from_slice(&response_bytes)?;
-	println!("{:#?}", response);
-
-	
-	/* let mut request_output = File::create("test_output.json")?;
-	request_output.write_all(&)?; */
-	/* let request_reader = BufReader::new(File::open("data/template_request.json")?);
-	let request_json: Request = serde_json::from_reader(request_reader)?;
-	println!("{:#?}", request_json); */
-
-	/* render(); */
+	//println!("Search Query: {:?}", query_search("hello there"));
+	render();
 	Ok(())
 }
 
@@ -77,6 +49,38 @@ fn get_auth<'a>(js_text: &'a str) -> anyhow::Result<(&'a str, &'a str)> {
 	
 	Ok((username, password))
 }
+fn query_search(search: &str) -> anyhow::Result<Response> {
+	lazy_static! {
+		static ref REQUEST_BUILDER: (String, HeaderMap) = {
+			let js_file: String = get_js_file().unwrap();
+			let request_url = get_request_url(&js_file).unwrap() + "/_search";
+			let (user, pass) = get_auth(&js_file).unwrap();
+			
+			let client = reqwest::blocking::Client::new();
+			let header_map = client.post(request_url.clone()).header(reqwest::header::CONTENT_TYPE, "application/json")
+				.basic_auth(user, Some(pass)).build().unwrap().headers().clone();
+			(request_url, header_map)
+		};
+		static ref REQUEST_TEMPLATE: RequestTemplate = RequestTemplate::new("data/request_template.json", "data/multi_match_template.json", "data/wildcard_template.json").unwrap();
+	}
+	let request = REQUEST_TEMPLATE.template(search);
+
+	let request_string = serde_json::to_string(&request)?;
+	let request_string = jsonxf::pretty_print(&request_string).unwrap();
+	let request_string = std::fs::read_to_string("data/request_template.json")?;
+	std::fs::write("target/request_check.json", &request_string)?;
+
+	let client = reqwest::blocking::Client::new();
+	let client_response = client.post(&REQUEST_BUILDER.0).headers(REQUEST_BUILDER.1.clone()).body(request_string).send()?;
+
+	let response_string = String::from_utf8(client_response.bytes()?.to_vec())?;
+	//println!("Response Bytes: {:?}", response_bytes);
+	let response_string = jsonxf::pretty_print(&response_string).unwrap();
+
+	std::fs::write("target/response_check.json", &response_string)?;
+	Ok(serde_json::from_str(&response_string)?)
+}
+
 
 fn render() {
 	let mut siv = cursive::default();
@@ -107,8 +111,19 @@ fn search_input(s: &mut Cursive, input: &str) {
 	let result_text = results.get_inner_mut();
 	if !input.is_empty() {
 		// Try again as many times as we need!
-		let content = format!("You Searched: {}", input);
-		result_text.set_content(content);
+		match query_search(input) {
+			Ok(response) => {
+				let mut content = String::with_capacity(1000);
+				for item in response.get_items() {
+					item.display(&mut content, false);
+				}
+				result_text.set_content(content);
+			}
+			Err(err) => {
+				let content = format!("Error: {:?}", err);
+				result_text.set_content(content);
+			}
+		}
 		//s.add_layer(Dialog::info(format!("Searching: {}", input)));
 	};
 }

@@ -6,7 +6,53 @@
 		"package_attr_name": "desc",
 		"package_pversion": "desc"
 	}],
-	"aggregations": {},
+	"aggregations": {
+		"package_attr_set": {
+			"terms": {
+				"field": "package_attr_set"
+			}
+		},
+		"package_license_set": {
+			"terms": {
+				"field": "package_license_set"
+			}
+		},
+		"package_maintainers_set": {
+			"terms": {
+				"field": "package_maintainers_set"
+			}
+		},
+		"package_platforms": {
+			"terms": {
+				"field": "package_platforms"
+			}
+		},
+		"all": {
+			"global": {},
+			"aggregations": {
+				"package_attr_set": {
+					"terms": {
+						"field": "package_attr_set"
+					}
+				},
+				"package_license_set": {
+					"terms": {
+						"field": "package_license_set"
+					}
+				},
+				"package_maintainers_set": {
+					"terms": {
+						"field": "package_maintainers_set"
+					}
+				},
+				"package_platforms": {
+					"terms": {
+						"field": "package_platforms"
+					}
+				}
+			}
+		}
+	},
 	"query": {
 		"bool": {
 			"filter": [{
@@ -43,27 +89,53 @@
 					"queries": [{
 						"multi_match": {
 							"type": "cross_fields",
-							"query": "hello",
+							"query": "hello ereht",
 							"analyzer": "whitespace",
 							"auto_generate_synonyms_phrase_query": false,
 							"operator": "and",
-							"_name": "multi_match_hello",
+							"_name": "multi_match_hello_ereht",
 							"fields": ["package_attr_name^9", "package_attr_name.edge^9", "package_pname^6", "package_pname.edge^6", "package_attr_name_query^4", "package_attr_name_query.edge^4", "package_description^1.3", "package_description.edge^1.3", "package_longDescription^1", "package_longDescription.edge^1", "package_attr_name_reverse^7.2", "package_attr_name_reverse.edge^7.2", "package_pname_reverse^4.800000000000001", "package_pname_reverse.edge^4.800000000000001", "package_attr_name_query_reverse^3.2", "package_attr_name_query_reverse.edge^3.2", "package_description_reverse^1.04", "package_description_reverse.edge^1.04", "package_longDescription_reverse^0.8", "package_longDescription_reverse.edge^0.8"]
 						}
 					}, {
 						"multi_match": {
 							"type": "cross_fields",
-							"query": "olleh",
+							"query": "hello there",
 							"analyzer": "whitespace",
 							"auto_generate_synonyms_phrase_query": false,
 							"operator": "and",
-							"_name": "multi_match_olleh",
+							"_name": "multi_match_hello_there",
+							"fields": ["package_attr_name^9", "package_attr_name.edge^9", "package_pname^6", "package_pname.edge^6", "package_attr_name_query^4", "package_attr_name_query.edge^4", "package_description^1.3", "package_description.edge^1.3", "package_longDescription^1", "package_longDescription.edge^1", "package_attr_name_reverse^7.2", "package_attr_name_reverse.edge^7.2", "package_pname_reverse^4.800000000000001", "package_pname_reverse.edge^4.800000000000001", "package_attr_name_query_reverse^3.2", "package_attr_name_query_reverse.edge^3.2", "package_description_reverse^1.04", "package_description_reverse.edge^1.04", "package_longDescription_reverse^0.8", "package_longDescription_reverse.edge^0.8"]
+						}
+					}, {
+						"multi_match": {
+							"type": "cross_fields",
+							"query": "olleh ereht",
+							"analyzer": "whitespace",
+							"auto_generate_synonyms_phrase_query": false,
+							"operator": "and",
+							"_name": "multi_match_olleh_ereht",
+							"fields": ["package_attr_name^9", "package_attr_name.edge^9", "package_pname^6", "package_pname.edge^6", "package_attr_name_query^4", "package_attr_name_query.edge^4", "package_description^1.3", "package_description.edge^1.3", "package_longDescription^1", "package_longDescription.edge^1", "package_attr_name_reverse^7.2", "package_attr_name_reverse.edge^7.2", "package_pname_reverse^4.800000000000001", "package_pname_reverse.edge^4.800000000000001", "package_attr_name_query_reverse^3.2", "package_attr_name_query_reverse.edge^3.2", "package_description_reverse^1.04", "package_description_reverse.edge^1.04", "package_longDescription_reverse^0.8", "package_longDescription_reverse.edge^0.8"]
+						}
+					}, {
+						"multi_match": {
+							"type": "cross_fields",
+							"query": "olleh there",
+							"analyzer": "whitespace",
+							"auto_generate_synonyms_phrase_query": false,
+							"operator": "and",
+							"_name": "multi_match_olleh_there",
 							"fields": ["package_attr_name^9", "package_attr_name.edge^9", "package_pname^6", "package_pname.edge^6", "package_attr_name_query^4", "package_attr_name_query.edge^4", "package_description^1.3", "package_description.edge^1.3", "package_longDescription^1", "package_longDescription.edge^1", "package_attr_name_reverse^7.2", "package_attr_name_reverse.edge^7.2", "package_pname_reverse^4.800000000000001", "package_pname_reverse.edge^4.800000000000001", "package_attr_name_query_reverse^3.2", "package_attr_name_query_reverse.edge^3.2", "package_description_reverse^1.04", "package_description_reverse.edge^1.04", "package_longDescription_reverse^0.8", "package_longDescription_reverse.edge^0.8"]
 						}
 					}, {
 						"wildcard": {
 							"package_attr_name": {
 								"value": "*hello*"
+							}
+						}
+					}, {
+						"wildcard": {
+							"package_attr_name": {
+								"value": "*there*"
 							}
 						}
 					}]
